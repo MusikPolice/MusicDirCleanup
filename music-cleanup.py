@@ -8,11 +8,10 @@ from sys import exit
 
 # Interprets user response to a boolean query. Returns boolean flag for y/n/Y/N/yes/no/YES/NO
 # Returns False for any unknown input
-# Ends program if user response is a/A/abort/ABORT
+# Returns null if user input is a/A/abort/ABORT
 def InterpretYesNoAbort(ans):
 	if ans.upper() == 'A' or ans.upper() == 'ABORT':
-		print('User aborted processing')
-		exit(0)
+		return None
 	elif ans.upper() == 'Y' or ans.upper() == 'YES':
 		return True
 	else:
@@ -40,6 +39,7 @@ def CombineDirectoryContents (dirToKeep, dirToCopy):
 # Searches for and prompts user to combine folders that have similar names.
 # Similarity is determined by removing whitespace and non alpha/non alphanumeric characters
 # and comparing to other folder names. 
+# Returns None if user aborts operation, True otherwise
 def CombineSimilarlyNamedFolders(rootDir):
 	if not rootDir.endswith('/'): rootDir = rootDir + '/'
 	print ('Searching ' + rootDir + ' for similarly named folders...')
@@ -61,7 +61,10 @@ def CombineSimilarlyNamedFolders(rootDir):
 			duplicateFolder = rootDir + artist
 
 			if existingFolder != duplicateFolder and os.path.isdir(existingFolder) and os.path.isdir(duplicateFolder):
-				if InterpretYesNoAbort(raw_input("Move contents of " + duplicateFolder + " into " + existingFolder + "? (yes/no/abort) >")):
+				result = InterpretYesNoAbort(raw_input("Move contents of " + duplicateFolder + " into " + existingFolder + "? (yes/no/abort) >"))
+				if result is None:
+					return None
+				elif result:
 					# combine the two directories
 					CombineDirectoryContents(existingFolder, duplicateFolder)
 		else:
@@ -77,7 +80,10 @@ def CombineSimilarlyNamedFolders(rootDir):
 			duplicateFolder = rootDir + artist
 
 			if existingFolder != duplicateFolder and os.path.isdir(existingFolder) and os.path.isdir(duplicateFolder):
-				if InterpretYesNoAbort(raw_input("Move contents of " + artist + " into " + artists[artistAlphaNumericOnly] + "? (yes/no/abort) >")):
+				result = InterpretYesNoAbort(raw_input("Move contents of " + artist + " into " + artists[artistAlphaNumericOnly] + "? (yes/no/abort) >"))
+				if result is None:
+					return None
+				elif result:
 					# combine the two directories
 					CombineDirectoryContents(existingFolder, duplicateFolder)
 		else:
@@ -103,7 +109,10 @@ def CombineSimilarlyNamedFolders(rootDir):
 				duplicateFolder = rootDir + otherArtistName
 
 				if existingFolder != duplicateFolder and os.path.isdir(existingFolder) and os.path.isdir(duplicateFolder):
-					if InterpretYesNoAbort(raw_input("Move contents of " + otherArtistName + " into " + artist + "? (yes/no/abort) >")):
+					result = InterpretYesNoAbort(raw_input("Move contents of " + otherArtistName + " into " + artist + "? (yes/no/abort) >"))
+					if result is None:
+						return None
+					elif result:
 						# combine the two directories
 						CombineDirectoryContents(existingFolder, duplicateFolder)
 
@@ -114,10 +123,14 @@ def CombineSimilarlyNamedFolders(rootDir):
 				duplicateFolder = rootDir + otherArtistName
 
 				if existingFolder != duplicateFolder and os.path.isdir(existingFolder) and os.path.isdir(duplicateFolder):
-					if InterpretYesNoAbort(raw_input("Move contents of " + otherArtistName + " into " + artist + "? (yes/no/abort) >")):
+					result = InterpretYesNoAbort(raw_input("Move contents of " + otherArtistName + " into " + artist + "? (yes/no/abort) >"))
+					if result is None:
+						return None
+					elif result:
 						# combine the two directories
 						CombineDirectoryContents(existingFolder, duplicateFolder)
-	print('Done');
+	print('Done')
+	return True
 
 
 # Does the above, but searches the entire subtree of rootDir
@@ -126,6 +139,7 @@ def CombineSimilarlyNamedFoldersRecursive(rootDir):
 
 	dirsToSearch = []
 
+	# recursively assemble list of sub dirs
 	for root, dirs, files in os.walk(rootDir, topdown=False):
 		for name in dirs:
 			if root not in dirsToSearch:
@@ -135,15 +149,19 @@ def CombineSimilarlyNamedFoldersRecursive(rootDir):
 				if (root + '/' + name) != startingDir:
 					dirsToSearch.append(root + '/' + name)
 
+	# process them in alphabetical order
 	dirsToSearch.sort()
-
 	for search in dirsToSearch:
 		if not os.path.isdir(search): continue
-		CombineSimilarlyNamedFolders(search)
+
+		# if user hits abort, respect it
+		if CombineSimilarlyNamedFolders(search) is None:
+			break
 	
 
 # Searches for and prompts user to rename folders that contain non-alphanumeric characters.
 # If user specifies a new folder name that already exists, folder contents are combined.
+# Returns None if user aborts, True otherwise
 def RenameFoldersNonAlphanumeric(rootDir):
 	if not rootDir.endswith('/'): rootDir = rootDir + '/'
 	print ('Searching ' + rootDir + ' for non-alphanumeric folders...')
@@ -156,7 +174,10 @@ def RenameFoldersNonAlphanumeric(rootDir):
 
 		# if artist contains non-alphanumeric characters, optionally rename the folder
 		if len(re.sub(r'\s', '', artist)) > 1 and (not re.sub(r'\s', '', artist).isalnum()) and os.path.isdir(rootDir + artist):
-			if InterpretYesNoAbort(raw_input("Would you like to rename " + artist + "? (yes/no/abort) >")):
+			result = InterpretYesNoAbort(raw_input("Would you like to rename " + artist + "? (yes/no/abort) >"))
+			if result is None:
+				return None
+			elif result:
 				# rename directory
 				newName = raw_input("What should we rename it to? ")
 
@@ -166,7 +187,10 @@ def RenameFoldersNonAlphanumeric(rootDir):
 					badlyNamedFolder = rootDir + artist
 
 					if existingFolder != badlyNamedFolder and os.path.isdir(existingFolder) and os.path.isdir(badlyNamedFolder):
-						if InterpretYesNoAbort(raw_input("Specified Directory exists. Combine contents? (yes/no/abort) >")):
+						result = InterpretYesNoAbort(raw_input("Specified Directory exists. Combine contents? (yes/no/abort) >"))
+						if result is None:
+							return None
+						elif result:
 							CombineDirectoryContents(existingFolder, badlyNamedFolder)
 				else:	
 					# if not, just rename as requested
@@ -174,14 +198,15 @@ def RenameFoldersNonAlphanumeric(rootDir):
 
 				print('Renamed')
 	print('Done')
+	return True
 
 
 # Does the above, but searches the entire subtree of rootDir
 def RenameFoldersNonAlphanumericRecursive(rootDir):
 	print ('Searching ' + rootDir + ' for non-alphanumeric folders...')
 
+	# recursively assemble list of subdirs to search
 	dirsToSearch = []
-
 	for root, dirs, files in os.walk(rootDir, topdown=False):
 		for name in dirs:
 			if root not in dirsToSearch:
@@ -191,11 +216,15 @@ def RenameFoldersNonAlphanumericRecursive(rootDir):
 				if (root + '/' + name) != startingDir:
 					dirsToSearch.append(root + '/' + name)
 
+	# process them in alphabetical order
 	dirsToSearch.sort()
-
 	for search in dirsToSearch:
 		if not os.path.isdir(search): continue
-		RenameFoldersNonAlphanumeric(search)
+
+		# respect user abort
+		if RenameFoldersNonAlphanumeric(search) is None:
+			break
+
 
 # Searches for folders that have some name x where another folder with the name The x also exists.
 # User is prompted to combine the folders
@@ -210,11 +239,17 @@ def CombineFoldersIgnorePrefix():
 
 		if not artist.upper().startswith('THE '):
 			if os.path.isdir(startingDir + 'The ' + artist):
-				if InterpretYesNoAbort(raw_input('Would you like to combine ' + artist + ' with The ' + artist + '? (yes/no/abort) >')):
+				result = InterpretYesNoAbort(raw_input('Would you like to combine ' + artist + ' with The ' + artist + '? (yes/no/abort) >'))
+				if result is None:
+					return
+				elif result:
 					CombineDirectoryContents(startingDir + 'The ' + artist, startingDir + artist)
 		if not artist.upper().startswith('A '):
 			if os.path.isdir(startingDir + 'A ' + artist):
-				if InterpretYesNoAbort(raw_input('Would you like to combine ' + artist + ' with A ' + artist + '? (yes/no/abort) >')):
+				result = InterpretYesNoAbort(raw_input('Would you like to combine ' + artist + ' with A ' + artist + '? (yes/no/abort) >'))
+				if result is None:
+					return
+				elif result:
 					CombineDirectoryContents(startingDir + 'A ' + artist, startingDir + artist)
 	print ('Done')
 
@@ -237,7 +272,11 @@ def DeleteUnwantedFileTypes():
 			elif extension not in ok:
 				# prompt user about this file type
 				print('Found new extension *' + extension)
-				if InterpretYesNoAbort(raw_input('Delete it? (yes/no/abort) >')):
+
+				result = InterpretYesNoAbort(raw_input('Delete it? (yes/no/abort) >'))
+				if result is None:
+					return
+				elif result:
 					# delete the file and remember for next time
 					os.remove(root + '/' + name)
 					bad.append(extension)
@@ -268,28 +307,32 @@ print ('Welcome to MusikPolice\'s Music Directory Cleanup Utility.')
 startingDir = raw_input('Enter directory to clean: ')
 if not startingDir.endswith('/'): startingDir = startingDir + '/'
 
-print('')
-print ('Select an action to perform:')
-print ('1. Combine Similarly Named Folders')
-print ('2. Combine Similarly Named Folders (Recursive)')
-print ('3. Rename Folders That Contain Non-Alphanumeric Characters')
-print ('4. Rename Folders That Contain Non-Alphanumeric Characters (Recursive)')
-print ('5. Combine Folders By Ignoring Prefixes The and A')
-print ('6. Delete Unwanted File Types (Recursive)')
-print ('7. Delete Empty Directories (Recursive)')
-action = raw_input('>')
+while True:
+	print('')
+	print ('Select an action to perform:')
+	print ('1. Combine Similarly Named Folders')
+	print ('2. Combine Similarly Named Folders (Recursive)')
+	print ('3. Rename Folders That Contain Non-Alphanumeric Characters')
+	print ('4. Rename Folders That Contain Non-Alphanumeric Characters (Recursive)')
+	print ('5. Combine Folders By Ignoring Prefixes The and A')
+	print ('6. Delete Unwanted File Types (Recursive)')
+	print ('7. Delete Empty Directories (Recursive)')
+	print ('8. Quit')
+	action = raw_input('>')
 
-if action == '1':
-	CombineSimilarlyNamedFolders(startingDir)
-elif action == '2':
-	CombineSimilarlyNamedFoldersRecursive(startingDir)
-elif action == '3':
-	RenameFoldersNonAlphanumeric(startingDir)
-elif action == '4':
-	RenameFoldersNonAlphanumericRecursive(startingDir)
-elif action == '5':
-	CombineFoldersIgnorePrefix()
-elif action == '6':
-	DeleteUnwantedFileTypes()
-elif action == '7':
-	DeleteEmptyDirectories()
+	if action == '1':
+		CombineSimilarlyNamedFolders(startingDir)
+	elif action == '2':
+		CombineSimilarlyNamedFoldersRecursive(startingDir)
+	elif action == '3':
+		RenameFoldersNonAlphanumeric(startingDir)
+	elif action == '4':
+		RenameFoldersNonAlphanumericRecursive(startingDir)
+	elif action == '5':
+		CombineFoldersIgnorePrefix()
+	elif action == '6':
+		DeleteUnwantedFileTypes()
+	elif action == '7':
+		DeleteEmptyDirectories()
+	elif action == '8':
+		break
