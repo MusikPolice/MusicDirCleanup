@@ -4,6 +4,7 @@ from distutils import dir_util
 import os
 import re
 from sys import exit
+from collections import defaultdict
 
 
 # Interprets user response to a boolean query. Returns boolean flag for y/n/Y/N/yes/no/YES/NO
@@ -35,7 +36,107 @@ def CombineDirectoryContents (dirToKeep, dirToCopy):
 	print("Deleted directory " + dirToCopy)
 	return True
 
-	
+# returns true if string1 is like string2
+# TODO: check if string1 contains string2, visa versa, and edit-distance comparisons
+def like(string1, string2):
+	return True
+
+
+# a new approach that pre-computes the merges
+# TODO: this is better, but the ultimate would be to pass in a list of other folders at the same level as the root
+# 	so that we can first combine artists, then albums, etc.
+# 	also need a keyword ignore list so things like 'greatest hits' can be filtered out 
+def CombineSimilarlyNamedFolders2(rootDir):
+	if not rootDir.endswith('/'): rootDir = rootDir + '/'
+	print ('Searching ' + rootDir + ' for similarly named folders...')
+
+	# alphabetically sorted list of all dirs under the root
+	# TODO: see above
+	directories = os.listdir(rootDir)
+	directories.sort()
+
+	# dictionary of directories to be combined
+	matches = defaultdict(list)
+
+	# list of directories already earmarked for combining
+	# skip these so they aren't processed twice
+	skipdirs = []
+
+	# double loop, bitch
+	for i in range(len(directories)):
+		for j in range(len(directories)):
+
+			# don't compare a directory to itself, don't compare things already marked for combination
+			if i == j: continue
+			if directories[i] in skipdirs: continue
+
+			# if directory names are similar, mark for combination
+			if (like(directories[i], directories[j])):
+				matches[directories[i]].append(directories[j])
+				skipdirs.append(directories[j])
+
+	# do the combination in a (sort of) user-friendly manner
+	for d in matches:
+		if len(matches[d]) > 0:
+			# show the user what we might combine
+			print ('The following directories have similar names:')
+			print ('1. ' + d)
+			for d2 in range(len(matches[d])):
+				print (str(d2 + 2) + '. ' + matches[d][d2])
+
+			combineDirs = []
+
+			# ask the user what we should actually combine
+			indexstr = raw_input('Enter the indices of the directories to combine. Enter an empty string to combine all of the above directories, or ''a'' to abort: ')
+			if (indexstr == ''):
+				# all
+				combineDirs.append(rootDir + d)
+				for d3 in matches[d]:
+					combineDirs.append(rootDir + d3)
+			elif (indexstr == 'a'):
+				print ('User chose to abort')
+				return None
+			else:
+				# some
+				indices = indexstr.split(',')
+				for i in indices:
+					if (int(i) == 1):
+						combineDirs.append(rootDir + d)
+					else:
+						combineDirs.append(rootDir + matches[d][int(i) - 2])
+
+			# show what we're actually combining
+			print ('You chose to combine the following directories:')
+			count = 1
+			for d4 in combineDirs:
+				print (str(count) + '. ' + d4)
+				count += 1
+
+			inputStr = raw_input('Enter the index of the directory that will contain all combined directories. Enter a non-numeric string to specify a different name, or ''a'' to abort: ')
+			if (inputStr == 'a'):
+				print ('User chose to abort')
+				return None
+
+			try:
+				temp = int(inputStr)
+				if temp > 0 and temp <= len(combineDirs):
+					newName = combineDirs[temp - 1]
+				else:
+					newName = rootDir + str(inputStr)
+			except:
+				# user entered a textual name
+				newName = rootDir + str(inputStr)
+
+			if not os.path.isdir(newName):
+				print ('Creating directory ' + newName)
+				os.makedirs(newName)
+
+			# combine all dirs
+			for i in combineDirs:
+				if i == newName: continue
+				CombineDirectoryContents (newName, i)
+
+
 # Searches for and prompts user to combine folders that have similar names.
 # Similarity is determined by removing whitespace and non alpha/non alphanumeric characters
 # and comparing to other folder names. 
@@ -311,28 +412,25 @@ while True:
 	print('')
 	print ('Select an action to perform:')
 	print ('1. Combine Similarly Named Folders')
-	print ('2. Combine Similarly Named Folders (Recursive)')
-	print ('3. Rename Folders That Contain Non-Alphanumeric Characters')
-	print ('4. Rename Folders That Contain Non-Alphanumeric Characters (Recursive)')
-	print ('5. Combine Folders By Ignoring Prefixes The and A')
-	print ('6. Delete Unwanted File Types (Recursive)')
-	print ('7. Delete Empty Directories (Recursive)')
-	print ('8. Quit')
+	print ('2. Rename Folders That Contain Non-Alphanumeric Characters')
+	print ('3. Rename Folders That Contain Non-Alphanumeric Characters (Recursive)')
+	print ('4. Combine Folders By Ignoring Prefixes The and A')
+	print ('5. Delete Unwanted File Types (Recursive)')
+	print ('6. Delete Empty Directories (Recursive)')
+	print ('7. Quit')
 	action = raw_input('>')
 
 	if action == '1':
-		CombineSimilarlyNamedFolders(startingDir)
+		CombineSimilarlyNamedFolders2(startingDir)
 	elif action == '2':
-		CombineSimilarlyNamedFoldersRecursive(startingDir)
-	elif action == '3':
 		RenameFoldersNonAlphanumeric(startingDir)
-	elif action == '4':
+	elif action == '3':
 		RenameFoldersNonAlphanumericRecursive(startingDir)
-	elif action == '5':
+	elif action == '4':
 		CombineFoldersIgnorePrefix()
-	elif action == '6':
+	elif action == '5':
 		DeleteUnwantedFileTypes()
-	elif action == '7':
+	elif action == '6':
 		DeleteEmptyDirectories()
-	elif action == '8':
+	elif action == '7':
 		break
