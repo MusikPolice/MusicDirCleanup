@@ -5,6 +5,7 @@ import os
 import re
 from sys import exit
 from collections import defaultdict
+from difflib import SequenceMatcher
 
 
 # Interprets user response to a boolean query. Returns boolean flag for y/n/Y/N/yes/no/YES/NO
@@ -37,23 +38,38 @@ def CombineDirectoryContents (dirToKeep, dirToCopy):
 	return True
 
 # returns true if string1 is like string2
-# TODO: check if string1 contains string2, visa versa, and edit-distance comparisons
+# if string1/string2 are paths, they MUST end with a trailing slash
 def like(string1, string2):
-	return True
+	# both strings might be paths - find parent dir of each
+	# this is next dir above current location - basically, the thing before the trailing slash
+	tokens1 = os.path.dirname(path).split('/')
+	tokens2 = os.path.dirname(path).split('/')
+	folder1 = tokens1[len(tokens1) - 1]
+	folder2 = tokens2[len(tokens2) - 1]
+
+	# split parent folder name into tokens - each word will be considered individually
+	tokens1 = string.split(tokens1, ' ')
+	tokens2 = string.split(tokens2, ' ')
+
+	accumulatedRatio = 1
+
+	for t1 in tokens1:
+		for t2 in tokens2:
+			ratio = SequenceMatcher(None, t1, t2).ratio()
+			if ratio > 0.8:
+				accumulatedRatio *= ratio
+
+	return accumulatedRatio > 0.8
 
 
 # a new approach that pre-computes the merges
-# TODO: this is better, but the ultimate would be to pass in a list of other folders at the same level as the root
-# 	so that we can first combine artists, then albums, etc.
-# 	also need a keyword ignore list so things like 'greatest hits' can be filtered out 
-def CombineSimilarlyNamedFolders2(rootDir):
-	if not rootDir.endswith('/'): rootDir = rootDir + '/'
-	print ('Searching ' + rootDir + ' for similarly named folders...')
-
-	# alphabetically sorted list of all dirs under the root
-	# TODO: see above
-	directories = os.listdir(rootDir)
-	directories.sort()
+# dirsToCompare - a fully-qualified list of directories that should be compared to one another in a search for duplicates.
+def CombineSimilarlyNamedFolders2(dirsToCompare):
+	
+	# append trailing slashes to dirs
+	# TODO: maybe also check for non-existent dirs here
+	for i in range(len(dirsToCompare)):
+		if not dirsToCompare[i].endswith('/'): dirsToCompare[i] = dirsToCompare[i] + '/'
 
 	# dictionary of directories to be combined
 	matches = defaultdict(list)
@@ -63,17 +79,17 @@ def CombineSimilarlyNamedFolders2(rootDir):
 	skipdirs = []
 
 	# double loop, bitch
-	for i in range(len(directories)):
-		for j in range(len(directories)):
+	for i in range(len(dirsToCompare)):
+		for j in range(len(dirsToCompare)):
 
 			# don't compare a directory to itself, don't compare things already marked for combination
 			if i == j: continue
-			if directories[i] in skipdirs: continue
+			if dirsToCompare[i] in skipdirs: continue
 
 			# if directory names are similar, mark for combination
-			if (like(directories[i], directories[j])):
-				matches[directories[i]].append(directories[j])
-				skipdirs.append(directories[j])
+			if (like(dirsToCompare[i], dirsToCompare[j])):
+				matches dirsToCompare[i]].append(dirsToCompare[j])
+				skipdirs.append(dirsToCompare[j])
 
 	# do the combination in a (sort of) user-friendly manner
 	for d in matches:
