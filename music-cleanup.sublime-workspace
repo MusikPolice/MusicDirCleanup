@@ -8,10 +8,10 @@
 	"buffers":
 	[
 		{
-			"file": "music-cleanup.py",
+			"file": "app.py",
 			"settings":
 			{
-				"buffer_size": 16395,
+				"buffer_size": 15827,
 				"line_ending": "Unix"
 			}
 		}
@@ -40,6 +40,7 @@
 	},
 	"file_history":
 	[
+		"/home/jfritz/Desktop/Storage/Documents/Jonathan/git/MusicDirCleanup/music-cleanup.py"
 	],
 	"find":
 	{
@@ -79,18 +80,18 @@
 			[
 				{
 					"buffer": 0,
-					"file": "music-cleanup.py",
+					"file": "app.py",
 					"settings":
 					{
-						"buffer_size": 16395,
+						"buffer_size": 15827,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								1656,
-								1656
+								2286,
+								2286
 							]
 						],
 						"settings":
@@ -99,7 +100,7 @@
 							"translate_tabs_to_spaces": false
 						},
 						"translation.x": 0.0,
-						"translation.y": 510.0,
+						"translation.y": 824.0,
 						"zoom_level": 1.0
 					},
 					"type": "text"
@@ -138,6 +139,10 @@
 		]
 	},
 	"menu_visible": true,
+	"output.exec":
+	{
+		"height": 112.0
+	},
 	"replace":
 	{
 		"height": 0.0
@@ -148,6 +153,10 @@
 		"height": 0.0,
 		"selected_items":
 		[
+			[
+				"app",
+				"app.py"
+			]
 		],
 		"width": 0.0
 	},

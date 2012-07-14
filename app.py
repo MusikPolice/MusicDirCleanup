@@ -3,9 +3,9 @@
 from distutils import dir_util
 import os
 import re
-from sys import exit
 from collections import defaultdict
 from difflib import SequenceMatcher
+from fuzzywuzzy import fuzz
 
 
 # Interprets user response to a boolean query. Returns boolean flag for y/n/Y/N/yes/no/YES/NO
@@ -38,28 +38,10 @@ def CombineDirectoryContents (dirToKeep, dirToCopy):
 	return True
 
 # returns true if string1 is like string2
-# if string1/string2 are paths, they MUST end with a trailing slash
+# utilizes fuzzywuzzy string matching library
+# TODO: make acceptance ratio configurable
 def like(string1, string2):
-	# both strings might be paths - find parent dir of each
-	# this is next dir above current location - basically, the thing before the trailing slash
-	tokens1 = os.path.dirname(path).split('/')
-	tokens2 = os.path.dirname(path).split('/')
-	folder1 = tokens1[len(tokens1) - 1]
-	folder2 = tokens2[len(tokens2) - 1]
-
-	# split parent folder name into tokens - each word will be considered individually
-	tokens1 = string.split(tokens1, ' ')
-	tokens2 = string.split(tokens2, ' ')
-
-	accumulatedRatio = 1
-
-	for t1 in tokens1:
-		for t2 in tokens2:
-			ratio = SequenceMatcher(None, t1, t2).ratio()
-			if ratio > 0.8:
-				accumulatedRatio *= ratio
-
-	return accumulatedRatio > 0.8
+	return fuzz.partial_ratio(string1, string2) > 80
 
 
 # a new approach that pre-computes the merges
@@ -88,7 +70,7 @@ def CombineSimilarlyNamedFolders2(dirsToCompare):
 
 			# if directory names are similar, mark for combination
 			if (like(dirsToCompare[i], dirsToCompare[j])):
-				matches dirsToCompare[i]].append(dirsToCompare[j])
+				matches[dirsToCompare[i]].append(dirsToCompare[j])
 				skipdirs.append(dirsToCompare[j])
 
 	# do the combination in a (sort of) user-friendly manner
