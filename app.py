@@ -68,8 +68,13 @@ def CombineSimilarlyNamedFolders2(dirsToCompare):
 			if i == j: continue
 			if dirsToCompare[i] in skipdirs: continue
 
+			tokens1 = os.path.dirname(dirsToCompare[i]).split('/')
+			tokens2 = os.path.dirname(dirsToCompare[j]).split('/')
+			folder1 = tokens1[len(tokens1) - 1]
+			folder2 = tokens2[len(tokens2) - 1]
+
 			# if directory names are similar, mark for combination
-			if (like(dirsToCompare[i], dirsToCompare[j])):
+			if (like(folder1, folder2)):
 				matches[dirsToCompare[i]].append(dirsToCompare[j])
 				skipdirs.append(dirsToCompare[j])
 
@@ -133,129 +138,6 @@ def CombineSimilarlyNamedFolders2(dirsToCompare):
 			for i in combineDirs:
 				if i == newName: continue
 				CombineDirectoryContents (newName, i)
-
-
-# Searches for and prompts user to combine folders that have similar names.
-# Similarity is determined by removing whitespace and non alpha/non alphanumeric characters
-# and comparing to other folder names. 
-# Returns None if user aborts operation, True otherwise
-def CombineSimilarlyNamedFolders(rootDir):
-	if not rootDir.endswith('/'): rootDir = rootDir + '/'
-	print ('Searching ' + rootDir + ' for similarly named folders...')
-
-	artistDirectories = os.listdir(rootDir)
-	artistDirectories.sort()
-
-	# a dictionary of directory names to cleaned names
-	artists = {}
-
-	for artist in artistDirectories:
-		if not os.path.isdir(rootDir + artist): continue
-
-		# strips all non-alphabetical characters and upper cases
-		artistAlphaOnly = ''.join(ch for ch in artist if ch.isalpha()).upper()
-		if len(artistAlphaOnly) > 1 and artistAlphaOnly in artists:
-			# move the contents of duplicateFolder/ into existingFolder/ and delete duplicateFolder/
-			existingFolder = rootDir + artists[artistAlphaOnly]
-			duplicateFolder = rootDir + artist
-
-			if existingFolder != duplicateFolder and os.path.isdir(existingFolder) and os.path.isdir(duplicateFolder):
-				result = InterpretYesNoAbort(raw_input("Move contents of " + duplicateFolder + " into " + existingFolder + "? (yes/no/abort) >"))
-				if result is None:
-					return None
-				elif result:
-					# combine the two directories
-					CombineDirectoryContents(existingFolder, duplicateFolder)
-		else:
-			# if not a match, add to the collection so future matches can be made
-			artists[artistAlphaOnly] = artist
-
-
-		# strips all non alpha characters and upper cases
-		artistAlphaNumericOnly = ''.join(ch for ch in artist if ch.isalnum()).upper()
-		if len(artistAlphaNumericOnly) > 1 and artistAlphaNumericOnly in artists:
-			# move the contents of duplicateFolder/ into existingFolder/ and delete duplicateFolder/
-			existingFolder = rootDir + artists[artistAlphaNumericOnly]
-			duplicateFolder = rootDir + artist
-
-			if existingFolder != duplicateFolder and os.path.isdir(existingFolder) and os.path.isdir(duplicateFolder):
-				result = InterpretYesNoAbort(raw_input("Move contents of " + artist + " into " + artists[artistAlphaNumericOnly] + "? (yes/no/abort) >"))
-				if result is None:
-					return None
-				elif result:
-					# combine the two directories
-					CombineDirectoryContents(existingFolder, duplicateFolder)
-		else:
-			# if not a match, add to the collection so future matches can be made
-			artists[artistAlphaNumericOnly] = artist
-
-
-		# if another directory exists that starts or ends with the clean artist name, combine?
-		for otherArtistName in artistDirectories:
-			otherArtistAlphaOnly = ''.join(ch for ch in otherArtistName if ch.isalpha()).upper()
-			otherArtistAlphaNumericOnly = ''.join(ch for ch in otherArtistName if ch.isalnum()).upper()
-
-			# dump out if anything evaluated to empty string - these are incomparable
-			if len(artistAlphaOnly) < 2: continue
-			if len(otherArtistAlphaOnly) < 2: continue
-			if len(artistAlphaNumericOnly) < 2: continue
-			if len(otherArtistAlphaNumericOnly) < 2: continue
-
-			# alpha only
-			if otherArtistAlphaOnly != artistAlphaOnly and (otherArtistAlphaOnly.startswith(artistAlphaOnly) or otherArtistAlphaOnly.endswith(artistAlphaOnly)):
-				# move the contents of duplicateFolder/ into existingFolder/ and delete duplicateFolder/
-				existingFolder = rootDir + artist
-				duplicateFolder = rootDir + otherArtistName
-
-				if existingFolder != duplicateFolder and os.path.isdir(existingFolder) and os.path.isdir(duplicateFolder):
-					result = InterpretYesNoAbort(raw_input("Move contents of " + otherArtistName + " into " + artist + "? (yes/no/abort) >"))
-					if result is None:
-						return None
-					elif result:
-						# combine the two directories
-						CombineDirectoryContents(existingFolder, duplicateFolder)
-
-			# alphanumeric only
-			if otherArtistAlphaNumericOnly != artistAlphaNumericOnly and (otherArtistAlphaNumericOnly.startswith(artistAlphaNumericOnly) or otherArtistAlphaNumericOnly.endswith(artistAlphaNumericOnly)):
-				# move the contents of duplicateFolder/ into existingFolder/ and delete duplicateFolder/
-				existingFolder = rootDir + artist
-				duplicateFolder = rootDir + otherArtistName
-
-				if existingFolder != duplicateFolder and os.path.isdir(existingFolder) and os.path.isdir(duplicateFolder):
-					result = InterpretYesNoAbort(raw_input("Move contents of " + otherArtistName + " into " + artist + "? (yes/no/abort) >"))
-					if result is None:
-						return None
-					elif result:
-						# combine the two directories
-						CombineDirectoryContents(existingFolder, duplicateFolder)
-	print('Done')
-	return True
-
-
-# Does the above, but searches the entire subtree of rootDir
-def CombineSimilarlyNamedFoldersRecursive(rootDir):
-	print ('Searching ' + rootDir + ' for similarly named folders...')
-
-	dirsToSearch = []
-
-	# recursively assemble list of sub dirs
-	for root, dirs, files in os.walk(rootDir, topdown=False):
-		for name in dirs:
-			if root not in dirsToSearch:
-				if root != startingDir:
-					dirsToSearch.append(root)
-			if (root + '/' + name) not in dirsToSearch:
-				if (root + '/' + name) != startingDir:
-					dirsToSearch.append(root + '/' + name)
-
-	# process them in alphabetical order
-	dirsToSearch.sort()
-	for search in dirsToSearch:
-		if not os.path.isdir(search): continue
-
-		# if user hits abort, respect it
-		if CombineSimilarlyNamedFolders(search) is None:
-			break
 	
 
 # Searches for and prompts user to rename folders that contain non-alphanumeric characters.
@@ -325,34 +207,6 @@ def RenameFoldersNonAlphanumericRecursive(rootDir):
 			break
 
 
-# Searches for folders that have some name x where another folder with the name The x also exists.
-# User is prompted to combine the folders
-def CombineFoldersIgnorePrefix():
-	print ('Searching ' + startingDir + ' for folders to combine...')
-
-	artistDirectories = os.listdir(startingDir)
-	artistDirectories.sort()
-
-	for artist in artistDirectories:
-		if not os.path.isdir(startingDir + artist): continue
-
-		if not artist.upper().startswith('THE '):
-			if os.path.isdir(startingDir + 'The ' + artist):
-				result = InterpretYesNoAbort(raw_input('Would you like to combine ' + artist + ' with The ' + artist + '? (yes/no/abort) >'))
-				if result is None:
-					return
-				elif result:
-					CombineDirectoryContents(startingDir + 'The ' + artist, startingDir + artist)
-		if not artist.upper().startswith('A '):
-			if os.path.isdir(startingDir + 'A ' + artist):
-				result = InterpretYesNoAbort(raw_input('Would you like to combine ' + artist + ' with A ' + artist + '? (yes/no/abort) >'))
-				if result is None:
-					return
-				elif result:
-					CombineDirectoryContents(startingDir + 'A ' + artist, startingDir + artist)
-	print ('Done')
-
-
 # Iterates through the folder structure looking for files with unwanted extensions and deleting them.
 # Prompts user for each new file type that is encountered and remembers selection
 def DeleteUnwantedFileTypes():
@@ -411,24 +265,31 @@ while True:
 	print ('Select an action to perform:')
 	print ('1. Combine Similarly Named Folders')
 	print ('2. Rename Folders That Contain Non-Alphanumeric Characters')
-	print ('3. Rename Folders That Contain Non-Alphanumeric Characters (Recursive)')
-	print ('4. Combine Folders By Ignoring Prefixes The and A')
-	print ('5. Delete Unwanted File Types (Recursive)')
-	print ('6. Delete Empty Directories (Recursive)')
-	print ('7. Quit')
+	print ('3. Delete Unwanted File Types')
+	print ('4. Delete Empty Directories')
+	print ('5. Quit')
 	action = raw_input('>')
 
 	if action == '1':
-		CombineSimilarlyNamedFolders2(startingDir)
+		if not rootDir.endswith('/'): rootDir = rootDir + '/'
+		print ('Searching ' + rootDir + ' for similarly named folders...')
+
+		artistDirectories = os.listdir(rootDir)
+		artistDirectories.sort()
+		CombineSimilarlyNamedFolders2(artistDirectories)
+
+		artistDirectories = os.listdir(rootDir)
+		artistDirectories.sort()
+		albumDirectories = []
+		for a in artistDirectories:
+			albumDirectories.append(os.listdir(a))
+		CombineSimilarlyNamedFolders2(albumDirectories)
+
 	elif action == '2':
-		RenameFoldersNonAlphanumeric(startingDir)
-	elif action == '3':
 		RenameFoldersNonAlphanumericRecursive(startingDir)
-	elif action == '4':
-		CombineFoldersIgnorePrefix()
-	elif action == '5':
+	elif action == '3':
 		DeleteUnwantedFileTypes()
-	elif action == '6':
+	elif action == '4':
 		DeleteEmptyDirectories()
-	elif action == '7':
+	elif action == '5':
 		break
