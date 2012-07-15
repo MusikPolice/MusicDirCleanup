@@ -46,7 +46,7 @@ def like(string1, string2):
 
 # a new approach that pre-computes the merges
 # dirsToCompare - a fully-qualified list of directories that should be compared to one another in a search for duplicates.
-def CombineSimilarlyNamedFolders2(dirsToCompare):
+def CombineSimilarlyNamedFolders(dirsToCompare):
 	
 	# append trailing slashes to dirs
 	# TODO: maybe also check for non-existent dirs here
@@ -263,33 +263,39 @@ if not startingDir.endswith('/'): startingDir = startingDir + '/'
 while True:
 	print('')
 	print ('Select an action to perform:')
-	print ('1. Combine Similarly Named Folders')
-	print ('2. Rename Folders That Contain Non-Alphanumeric Characters')
-	print ('3. Delete Unwanted File Types')
-	print ('4. Delete Empty Directories')
-	print ('5. Quit')
+	print ('1. Combine Artist Folders (level 1)')
+	print ('2. Combine Album Folders (level 2)')
+	print ('3. Rename Folders That Contain Non-Alphanumeric Characters')
+	print ('4. Delete Unwanted File Types')
+	print ('5. Delete Empty Directories')
+	print ('6. Quit')
 	action = raw_input('>')
 
 	if action == '1':
-		if not rootDir.endswith('/'): rootDir = rootDir + '/'
-		print ('Searching ' + rootDir + ' for similarly named folders...')
+		if not startingDir.endswith('/'): startingDir = startingDir + '/'
+		print ('Searching ' + startingDir + ' for similarly named artists...')
 
-		artistDirectories = os.listdir(rootDir)
+		artistDirectories = os.listdir(startingDir)
 		artistDirectories.sort()
-		CombineSimilarlyNamedFolders2(artistDirectories)
+		CombineSimilarlyNamedFolders(artistDirectories)
 
-		artistDirectories = os.listdir(rootDir)
+	if action == '2':
+		if not startingDir.endswith('/'): startingDir = startingDir + '/'
+		print ('Searching ' + startingDir + ' for similarly named albums...')
+		artistDirectories = os.listdir(startingDir)
 		artistDirectories.sort()
 		albumDirectories = []
 		for a in artistDirectories:
-			albumDirectories.append(os.listdir(a))
-		CombineSimilarlyNamedFolders2(albumDirectories)
+			for sub in os.listdir(startingDir + a):
+				albumDirectories.append(a + '/' + sub + '/')
+		albumDirectories.sort()
+		CombineSimilarlyNamedFolders(albumDirectories)
 
-	elif action == '2':
-		RenameFoldersNonAlphanumericRecursive(startingDir)
 	elif action == '3':
-		DeleteUnwantedFileTypes()
+		RenameFoldersNonAlphanumericRecursive(startingDir)
 	elif action == '4':
-		DeleteEmptyDirectories()
+		DeleteUnwantedFileTypes()
 	elif action == '5':
+		DeleteEmptyDirectories()
+	elif action == '6':
 		break
