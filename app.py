@@ -29,7 +29,9 @@ def CombineDirectoryContents (dirToKeep, dirToCopy):
 
 	# copy
 	dir_util.copy_tree(dirToCopy, dirToKeep)
-	print("Copied contents of " + dirToCopy + " to " + dirToKeep)
+	print("Copied contents of ")
+	print(dirToCopy + " to ")
+	print(dirToKeep)
 
 	# clean up
 	for root, dirs, files in os.walk(dirToCopy, topdown=False):
