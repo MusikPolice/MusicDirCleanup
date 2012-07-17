@@ -44,7 +44,7 @@ def CombineDirectoryContents (dirToKeep, dirToCopy):
 # utilizes fuzzywuzzy string matching library
 # TODO: make acceptance ratio configurable
 def like(string1, string2):
-	return fuzz.partial_ratio(string1, string2) > 80
+	return fuzz.partial_ratio(string1, string2) >= 75
 
 
 # a new approach that pre-computes the merges
@@ -64,8 +64,10 @@ def CombineSimilarlyNamedFolders(rootDir, dirsToCompare):
 		print('Searching for matches for ' + dirsToCompare[i] + '... ')
 		for j in range(len(dirsToCompare)):
 
-			# don't compare a directory to itself, don't compare things already marked for combination
+			# don't compare a directory to itself, don't compare things that don't exist
 			if i == j: continue
+			if not os.path.isdir(rootDir + dirsToCompare[i]): continue
+			if not os.path.isdir(rootDir + dirsToCompare[j]): continue
 
 			tokens1 = os.path.dirname(dirsToCompare[i]).split('/')
 			tokens2 = os.path.dirname(dirsToCompare[j]).split('/')
@@ -76,76 +78,72 @@ def CombineSimilarlyNamedFolders(rootDir, dirsToCompare):
 			if (like(folder1, folder2)):
 				matches[dirsToCompare[i]].append(dirsToCompare[j])
 
-	# do the combination in a (sort of) user-friendly manner
-	for d in matches:
-		if len(matches[d]) > 0:
-			# show the user what we might combine
-			print ('The following directories have similar names:')
-			print ('1. ' + d)
-			for d2 in range(len(matches[d])):
-				print (str(d2 + 2) + '. ' + matches[d][d2])
+		# do the combination in a (sort of) user-friendly manner
+		for d in matches:
+			if len(matches[d]) > 0:
+				# show the user what we might combine
+				print ('The following directories have similar names:')
+				print ('1. ' + d)
+				for d2 in range(len(matches[d])):
+					print (str(d2 + 2) + '. ' + matches[d][d2])
 
-			combineDirs = []
+				combineDirs = []
 
-			# ask the user what we should actually combine
-			indexstr = raw_input('Enter the indices of the directories to combine. Return to combine all of the above, ''s'' to skip, or ''a'' to abort: ')
-			if indexstr == '':
-				# all
-				combineDirs.append(rootDir + d)
-				for d3 in matches[d]:
-					combineDirs.append(rootDir + d3)
-			elif indexstr == 'a':
-				print ('User chose to abort')
-				return None
-			elif indexstr == 's':
-				print ('User chose to skip')
-				continue
-			else:
-				# some
-				indices = indexstr.split(',')
-				for i in indices:
-					if (int(i) == 1):
-						combineDirs.append(rootDir + d)
-					else:
-						combineDirs.append(rootDir + matches[d][int(i) - 2])
-
-			# show what we're actually combining
-			print ('You chose to combine the following directories:')
-			count = 1
-			for d4 in combineDirs:
-				print (str(count) + '. ' + d4)
-				count += 1
-
-			inputStr = raw_input('Enter the index of the directory that will contain all combined directories. Enter a non-numeric string to specify a different name, or ''a'' to abort: ')
-			if (inputStr == 'a'):
-				print ('User chose to abort')
-				return None
-
-			try:
-				temp = int(inputStr)
-				if temp > 0 and temp <= len(combineDirs):
-					newName = combineDirs[temp - 1]
+				# ask the user what we should actually combine
+				indexstr = raw_input('Enter the indices of the directories to combine. Return to combine all of the above, ''s'' to skip, or ''a'' to abort: ')
+				if indexstr == '':
+					# all
+					combineDirs.append(rootDir + d)
+					for d3 in matches[d]:
+						combineDirs.append(rootDir + d3)
+				elif indexstr == 'a':
+					print ('User chose to abort')
+					return None
+				elif indexstr == 's':
+					print ('User chose to skip')
+					continue
 				else:
+					# some
+					indices = indexstr.split(',')
+					for i in indices:
+						if (int(i) == 1):
+							combineDirs.append(rootDir + d)
+						else:
+							combineDirs.append(rootDir + matches[d][int(i) - 2])
+
+				# show what we're actually combining
+				print ('You chose to combine the following directories:')
+				count = 1
+				for d4 in combineDirs:
+					print (str(count) + '. ' + d4)
+					count += 1
+
+				inputStr = raw_input('Enter the index of the directory that will contain all combined directories. Enter a non-numeric string to specify a different name, or ''a'' to abort: ')
+				if (inputStr == 'a'):
+					print ('User chose to abort')
+					return None
+
+				try:
+					temp = int(inputStr)
+					if temp > 0 and temp <= len(combineDirs):
+						newName = combineDirs[temp - 1]
+					else:
+						newName = rootDir + str(inputStr)
+				except:
+					# user entered a textual name
 					newName = rootDir + str(inputStr)
-			except:
-				# user entered a textual name
-				newName = rootDir + str(inputStr)
 
-			if not os.path.isdir(newName):
-				print ('Creating directory ' + newName)
-				os.makedirs(newName)
+				if not os.path.isdir(newName):
+					print ('Creating directory ' + newName)
+					os.makedirs(newName)
 
-			# combine all dirs
-			for i in combineDirs:
-				if i == newName: continue
-				CombineDirectoryContents (newName, i)
+				# combine all dirs
+				for i in combineDirs:
+					if i == newName: continue
+					CombineDirectoryContents (newName, i)
 
-				#remove combined dirs from other matches so we don't repeat ourselves
-				for key in matches:
-					if i in matches[key]:
-						value = matches[key]
-						value.remove(i)
-						matches[key] = value
+		#clear matches
+		matches.clear()
 
 	
 
