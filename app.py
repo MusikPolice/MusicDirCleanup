@@ -47,7 +47,7 @@ def CombineDirectoryContents (dirToKeep, dirToCopy):
 # utilizes fuzzywuzzy string matching library
 # TODO: make acceptance ratio configurable
 def like(string1, string2):
-	return fuzz.partial_ratio(string1, string2) >= 75
+	return fuzz.partial_ratio(string1, string2) >= 80
 
 
 # a new approach that pre-computes the merges
