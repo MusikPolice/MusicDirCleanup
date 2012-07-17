@@ -1,10 +1,11 @@
 #!/usr/bin/python
 
-from distutils import dir_util
 import os
 import re
+import string
 from collections import defaultdict
 from difflib import SequenceMatcher
+from distutils import dir_util
 from fuzzywuzzy import fuzz
 
 
@@ -145,7 +146,6 @@ def CombineSimilarlyNamedFolders(rootDir, dirsToCompare):
 		#clear matches
 		matches.clear()
 
-	
 
 # Searches for and prompts user to rename folders that contain non-alphanumeric characters.
 # If user specifies a new folder name that already exists, folder contents are combined.
@@ -166,25 +166,51 @@ def RenameFoldersNonAlphanumeric(rootDir):
 			if result is None:
 				return None
 			elif result:
-				# rename directory
-				newName = raw_input("What should we rename it to? ")
 
-				if os.path.isdir(rootDir + newName):
-					# if dir exists, combine
-					existingFolder = rootDir + newName
-					badlyNamedFolder = rootDir + artist
+				manual = False
 
-					if existingFolder != badlyNamedFolder and os.path.isdir(existingFolder) and os.path.isdir(badlyNamedFolder):
-						result = InterpretYesNoAbort(raw_input("Specified Directory exists. Combine contents? (yes/no/abort) >"))
-						if result is None:
-							return None
-						elif result:
-							CombineDirectoryContents(existingFolder, badlyNamedFolder)
-				else:	
-					# if not, just rename as requested
-					os.rename(rootDir + artist, rootDir + newName)
+				if re.match('^.*\(\d{4}\)$', artist):
+					newName = artist[0:(string.find(artist,'(') - 1)]
 
-				print('Renamed')
+					result = InterpretYesNoAbort(raw_input("Rename <" + artist + "> to <" + newName + ">? (yes/no/abort) >"))
+					if result is None:
+						return None
+					elif result:
+						if os.path.isdir(rootDir + newName):
+							# folder exists - combine the two
+							CombineDirectoryContents(rootDir + newName, rootDir + artist)
+						else:
+							# folder doesn't exist - rename 
+							os.rename(rootDir + artist, rootDir + newName)
+							print("Renamed.")
+					else:
+						# user rejected our suggested name - need to rename manually
+						manual = True
+				else:
+					# didn't match the pattern - need to rename manually
+					manual = True
+
+
+				if manual:
+					# rename directory manually
+					newName = raw_input("What should we rename it to? ")
+
+					if os.path.isdir(rootDir + newName):
+						# if dir exists, combine
+						existingFolder = rootDir + newName
+						badlyNamedFolder = rootDir + artist
+
+						if existingFolder != badlyNamedFolder and os.path.isdir(existingFolder) and os.path.isdir(badlyNamedFolder):
+							result = InterpretYesNoAbort(raw_input("Specified Directory exists. Combine contents? (yes/no/abort) >"))
+							if result is None:
+								return None
+							elif result:
+								CombineDirectoryContents(existingFolder, badlyNamedFolder)
+					else:	
+						# if not, just rename as requested
+						os.rename(rootDir + artist, rootDir + newName)
+
+					print('Renamed')
 	print('Done')
 	return True
 
