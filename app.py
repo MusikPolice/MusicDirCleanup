@@ -22,6 +22,9 @@ def InterpretYesNoAbort(ans):
 # Recursively copies all files/folders from dirToCopy into dirToKeep
 # and then removes dirToCopy from the file system.
 def CombineDirectoryContents (dirToKeep, dirToCopy):
+	if os.path.isdir(dirToKeep) == False or os.path.isdir(dirToCopy) == False:
+		print ("One of the specified directories does not exist. Copy fails.")
+		return False
 
 	# copy
 	dir_util.copy_tree(dirToCopy, dirToKeep)
@@ -46,7 +49,7 @@ def like(string1, string2):
 
 # a new approach that pre-computes the merges
 # dirsToCompare - a fully-qualified list of directories that should be compared to one another in a search for duplicates.
-def CombineSimilarlyNamedFolders(dirsToCompare):
+def CombineSimilarlyNamedFolders(rootDir, dirsToCompare):
 	
 	# append trailing slashes to dirs
 	# TODO: maybe also check for non-existent dirs here
@@ -56,17 +59,13 @@ def CombineSimilarlyNamedFolders(dirsToCompare):
 	# dictionary of directories to be combined
 	matches = defaultdict(list)
 
-	# list of directories already earmarked for combining
-	# skip these so they aren't processed twice
-	skipdirs = []
-
 	# double loop, bitch
 	for i in range(len(dirsToCompare)):
+		print('Searching for matches for ' + dirsToCompare[i] + '... ')
 		for j in range(len(dirsToCompare)):
 
 			# don't compare a directory to itself, don't compare things already marked for combination
 			if i == j: continue
-			if dirsToCompare[i] in skipdirs: continue
 
 			tokens1 = os.path.dirname(dirsToCompare[i]).split('/')
 			tokens2 = os.path.dirname(dirsToCompare[j]).split('/')
@@ -76,7 +75,6 @@ def CombineSimilarlyNamedFolders(dirsToCompare):
 			# if directory names are similar, mark for combination
 			if (like(folder1, folder2)):
 				matches[dirsToCompare[i]].append(dirsToCompare[j])
-				skipdirs.append(dirsToCompare[j])
 
 	# do the combination in a (sort of) user-friendly manner
 	for d in matches:
@@ -90,15 +88,18 @@ def CombineSimilarlyNamedFolders(dirsToCompare):
 			combineDirs = []
 
 			# ask the user what we should actually combine
-			indexstr = raw_input('Enter the indices of the directories to combine. Enter an empty string to combine all of the above directories, or ''a'' to abort: ')
-			if (indexstr == ''):
+			indexstr = raw_input('Enter the indices of the directories to combine. Return to combine all of the above, ''s'' to skip, or ''a'' to abort: ')
+			if indexstr == '':
 				# all
 				combineDirs.append(rootDir + d)
 				for d3 in matches[d]:
 					combineDirs.append(rootDir + d3)
-			elif (indexstr == 'a'):
+			elif indexstr == 'a':
 				print ('User chose to abort')
 				return None
+			elif indexstr == 's':
+				print ('User chose to skip')
+				continue
 			else:
 				# some
 				indices = indexstr.split(',')
@@ -138,6 +139,14 @@ def CombineSimilarlyNamedFolders(dirsToCompare):
 			for i in combineDirs:
 				if i == newName: continue
 				CombineDirectoryContents (newName, i)
+
+				#remove combined dirs from other matches so we don't repeat ourselves
+				for key in matches:
+					if i in matches[key]:
+						value = matches[key]
+						value.remove(i)
+						matches[key] = value
+
 	
 
 # Searches for and prompts user to rename folders that contain non-alphanumeric characters.
@@ -277,7 +286,7 @@ while True:
 
 		artistDirectories = os.listdir(startingDir)
 		artistDirectories.sort()
-		CombineSimilarlyNamedFolders(artistDirectories)
+		CombineSimilarlyNamedFolders(startingDir, artistDirectories)
 
 	if action == '2':
 		if not startingDir.endswith('/'): startingDir = startingDir + '/'
@@ -289,7 +298,7 @@ while True:
 			for sub in os.listdir(startingDir + a):
 				albumDirectories.append(a + '/' + sub + '/')
 		albumDirectories.sort()
-		CombineSimilarlyNamedFolders(albumDirectories)
+		CombineSimilarlyNamedFolders(startingDir, albumDirectories)
 
 	elif action == '3':
 		RenameFoldersNonAlphanumericRecursive(startingDir)
