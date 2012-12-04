@@ -13,9 +13,9 @@ from fuzzywuzzy import fuzz
 # Returns False for any unknown input
 # Returns null if user input is a/A/abort/ABORT
 def InterpretYesNoAbort(ans):
-	if ans.upper() == 'A' or ans.upper() == 'ABORT':
+	if ans.upper() in ('A', 'ABORT'):
 		return None
-	elif ans.upper() == 'Y' or ans.upper() == 'YES':
+	elif ans.upper() in ('Y', 'YES'):
 		return True
 	else:
 		return False
@@ -40,7 +40,7 @@ def CombineDirectoryContents (dirToKeep, dirToCopy):
 		for name in dirs:
 			os.rmdir(root + '/' + name)
 	os.rmdir(dirToCopy)
-	print("Deleted directory " + dirToCopy)
+	print("Deleted directory %s " % dirToCopy)
 	return True
 
 # returns true if string1 is like string2
@@ -57,23 +57,26 @@ def CombineSimilarlyNamedFolders(rootDir, dirsToCompare):
 	# append trailing slashes to dirs
 	# TODO: maybe also check for non-existent dirs here
 	for i in range(len(dirsToCompare)):
-		if not dirsToCompare[i].endswith('/'): dirsToCompare[i] = dirsToCompare[i] + '/'
+		if not dirsToCompare[i].endswith(os.sep): 
+			dirsToCompare[i] = dirsToCompare[i] + os.sep
 
 	# dictionary of directories to be combined
 	matches = defaultdict(list)
 
 	# double loop, bitch
 	for i in range(len(dirsToCompare)):
-		print('Searching for matches for ' + dirsToCompare[i] + '... ')
+		print('Searching for matches for %s...' % dirsToCompare[i])
 		for j in range(len(dirsToCompare)):
 
 			# don't compare a directory to itself, don't compare things that don't exist
 			if i == j: continue
-			if not os.path.isdir(rootDir + dirsToCompare[i]): continue
-			if not os.path.isdir(rootDir + dirsToCompare[j]): continue
+			if not os.path.isdir(rootDir + dirsToCompare[i]):
+				continue
+			if not os.path.isdir(rootDir + dirsToCompare[j]): 
+				continue
 
-			tokens1 = os.path.dirname(dirsToCompare[i]).split('/')
-			tokens2 = os.path.dirname(dirsToCompare[j]).split('/')
+			tokens1 = os.path.dirname(dirsToCompare[i]).split(os.sep)
+			tokens2 = os.path.dirname(dirsToCompare[j]).split(os.sep)
 			folder1 = tokens1[len(tokens1) - 1]
 			folder2 = tokens2[len(tokens2) - 1]
 
@@ -126,7 +129,7 @@ def CombineSimilarlyNamedFolders(rootDir, dirsToCompare):
 					print ('User chose to abort')
 					return None
 
-				try:
+				try:	
 					temp = int(inputStr)
 					if temp > 0 and temp <= len(combineDirs):
 						newName = combineDirs[temp - 1]
@@ -137,7 +140,7 @@ def CombineSimilarlyNamedFolders(rootDir, dirsToCompare):
 					newName = rootDir + str(inputStr)
 
 				if not os.path.isdir(newName):
-					print ('Creating directory ' + newName)
+					print ('Creating directory %s' % newName)
 					os.makedirs(newName)
 
 				# combine all dirs
@@ -161,10 +164,21 @@ def RenameFoldersNonAlphanumeric(rootDir):
 
 	for artist in artistDirectories:
 		if not os.path.isdir(rootDir + artist): continue
-
+		
 		# if artist contains non-alphanumeric characters, optionally rename the folder
-		if len(re.sub(r'\s', '', artist)) > 1 and (not re.sub(r'\s', '', artist).isalnum()) and os.path.isdir(rootDir + artist):
-			result = InterpretYesNoAbort(raw_input("Would you like to rename " + artist + "? (yes/no/abort) >"))
+		
+		"""
+		Detect alphanumeric conditions - ignore the following:
+		
+		* Whitespace
+		* Apostrophes
+		* Dashes
+		* Commas
+		""" 
+		artist_test = re.sub(r'\s|\'|-|,', '', artist)
+		
+		if len(artist_test) > 1 and (not artist_test.isalnum()) and os.path.isdir(rootDir + artist):
+			result = InterpretYesNoAbort(raw_input("Would you like to rename <%s>? (yes/no/abort) >" % artist))
 			if result is None:
 				return None
 			elif result:
@@ -174,7 +188,7 @@ def RenameFoldersNonAlphanumeric(rootDir):
 				if re.match('^.*\(\d{4}\)$', artist):
 					newName = artist[0:(string.find(artist,'(') - 1)]
 
-					result = InterpretYesNoAbort(raw_input("Rename <" + artist + "> to <" + newName + ">? (yes/no/abort) >"))
+					result = InterpretYesNoAbort(raw_input("Rename <%s> to <%s>? (yes/no/abort) >" % (artist, newName)))
 					if result is None:
 						return None
 					elif result:
@@ -200,10 +214,10 @@ def RenameFoldersNonAlphanumeric(rootDir):
 					if os.path.isdir(rootDir + newName):
 						# if dir exists, combine
 						existingFolder = rootDir + newName
-						badlyNamedFolder = rootDir + artist
+						badlyNamedFolder = rootDir + artist + os.sep
 
 						if existingFolder != badlyNamedFolder and os.path.isdir(existingFolder) and os.path.isdir(badlyNamedFolder):
-							result = InterpretYesNoAbort(raw_input("Specified Directory exists. Combine contents? (yes/no/abort) >"))
+							result = InterpretYesNoAbort(raw_input("Specified directory exists. Combine contents? (yes/no/abort) >"))
 							if result is None:
 								return None
 							elif result:
@@ -219,7 +233,7 @@ def RenameFoldersNonAlphanumeric(rootDir):
 
 # Does the above, but searches the entire subtree of rootDir
 def RenameFoldersNonAlphanumericRecursive(rootDir):
-	print ('Searching ' + rootDir + ' for non-alphanumeric folders...')
+	print ('Searching %s for non-alphanumeric folders...' % rootDir)
 
 	# recursively assemble list of subdirs to search
 	dirsToSearch = []
@@ -228,9 +242,9 @@ def RenameFoldersNonAlphanumericRecursive(rootDir):
 			if root not in dirsToSearch:
 				if root != startingDir:
 					dirsToSearch.append(root)
-			if (root + '/' + name) not in dirsToSearch:
-				if (root + '/' + name) != startingDir:
-					dirsToSearch.append(root + '/' + name)
+			if (root + os.sep + name) not in dirsToSearch:
+				if (root + os.sep + name) != startingDir:
+					dirsToSearch.append(root + os.sep + name)
 
 	# process them in alphabetical order
 	dirsToSearch.sort()
@@ -245,28 +259,28 @@ def RenameFoldersNonAlphanumericRecursive(rootDir):
 # Iterates through the folder structure looking for files with unwanted extensions and deleting them.
 # Prompts user for each new file type that is encountered and remembers selection
 def DeleteUnwantedFileTypes():
-	print ('Searching ' + startingDir + ' for unwanted file types...')
+	print ('Searching %s for unwanted file types...' % startingDir)
 
 	ok = []
 	bad = []
 
 	for root, dirs, files in os.walk(startingDir, topdown=False):
 		for name in files:
-			extension = os.path.splitext(root + '/' + name)[1]
+			extension = os.path.splitext(root + os.sep + name)[1]
 			if extension in bad:
 				# delete the file
-				print('Deleting file ' + root + '/' + name)
-				os.remove(root + '/' + name)
+				print('Deleting file ' + root + os.sep + name)
+				os.remove(root + os.sep + name)
 			elif extension not in ok:
 				# prompt user about this file type
-				print('Found new extension *' + extension)
+				print('Found new extension *%s' % extension)
 
 				result = InterpretYesNoAbort(raw_input('Delete it? (yes/no/abort) >'))
 				if result is None:
 					return
 				elif result:
 					# delete the file and remember for next time
-					os.remove(root + '/' + name)
+					os.remove(root + os.sep + name)
 					bad.append(extension)
 				else:
 					# remember for next time
@@ -276,16 +290,16 @@ def DeleteUnwantedFileTypes():
 
 # Deletes empty directories
 def DeleteEmptyDirectories():
-	print ('Searching ' + startingDir + ' for empty directories...')
+	print ('Searching %s for empty directories...' % startingDir)
 
 	for root, dirs, files in os.walk(startingDir, topdown=False):
 		for name in dirs:
 			# returns sub directories and files - if none, it's empty
 			# note: this does not consider hidden files - these could be accidentally deleted!
-			subdirs = os.listdir(root + '/' + name)
+			subdirs = os.listdir(root + os.sep + name)
 			if len(subdirs) == 0:
-				print('Deleting empty directory ' + root + '/' + name)
-				os.rmdir(root + '/' + name)
+				print('Deleting empty directory ' + root + os.sep + name)
+				os.rmdir(root + os.sep + name)
 
 	print ('Done')
 
@@ -293,7 +307,8 @@ def DeleteEmptyDirectories():
 # Program Entry
 print ('Welcome to MusikPolice\'s Music Directory Cleanup Utility.')
 startingDir = raw_input('Enter directory to clean: ')
-if not startingDir.endswith('/'): startingDir = startingDir + '/'
+if not startingDir.endswith(os.sep): 
+	startingDir = startingDir + os.sep
 
 while True:
 	print('')
@@ -307,22 +322,24 @@ while True:
 	action = raw_input('>')
 
 	if action == '1':
-		if not startingDir.endswith('/'): startingDir = startingDir + '/'
-		print ('Searching ' + startingDir + ' for similarly named artists...')
+		if not startingDir.endswith(os.sep): 
+			startingDir = startingDir + os.sep
+		print ('Searching %s for similarly named artists...' % startingDir)
 
 		artistDirectories = os.listdir(startingDir)
 		artistDirectories.sort()
 		CombineSimilarlyNamedFolders(startingDir, artistDirectories)
 
 	if action == '2':
-		if not startingDir.endswith('/'): startingDir = startingDir + '/'
-		print ('Searching ' + startingDir + ' for similarly named albums...')
+		if not startingDir.endswith(os.sep): 
+			startingDir += os.sep
+		print ('Searching %s for similarly named albums...' % startingDir)
 		artistDirectories = os.listdir(startingDir)
 		artistDirectories.sort()
 		albumDirectories = []
 		for a in artistDirectories:
 			for sub in os.listdir(startingDir + a):
-				albumDirectories.append(a + '/' + sub + '/')
+				albumDirectories.append(a + os.sep + sub + os.sep)
 		albumDirectories.sort()
 		CombineSimilarlyNamedFolders(startingDir, albumDirectories)
 
