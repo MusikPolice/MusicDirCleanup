@@ -7,6 +7,7 @@ from collections import defaultdict
 from difflib import SequenceMatcher
 from distutils import dir_util
 from fuzzywuzzy import fuzz
+import readline
 	
 def invalid_input():
 	print "Please enter a valid option."
@@ -67,6 +68,20 @@ def like(string1, string2):
 	return fuzz.partial_ratio(string1, string2) >= 80
 
 
+def should_exclude_album(name):
+	# Determine if we should specifically exclude the album based on its name
+	# This prevents items like "greatest hits"
+	test_name = name.lower()
+	exclude_cases = (
+					'greatest hit',
+					)
+	
+	for test in exclude_cases:
+		if test in test_name:
+			return True
+		
+	return False
+
 # a new approach that pre-computes the merges
 # dirsToCompare - a fully-qualified list of directories that should be compared to one another in a search for duplicates.
 def CombineSimilarlyNamedFolders(rootDir, dirsToCompare):
@@ -90,6 +105,10 @@ def CombineSimilarlyNamedFolders(rootDir, dirsToCompare):
 			if not os.path.isdir(rootDir + dirsToCompare[i]):
 				continue
 			if not os.path.isdir(rootDir + dirsToCompare[j]): 
+				continue
+			
+			# specifically exclude certain albums
+			if should_exclude_album(dirsToCompare[i]) or should_exclude_album(dirsToCompare[j]):
 				continue
 
 			tokens1 = os.path.dirname(dirsToCompare[i]).split(os.sep)
@@ -173,7 +192,9 @@ def CombineSimilarlyNamedFolders(rootDir, dirsToCompare):
 # If user specifies a new folder name that already exists, folder contents are combined.
 # Returns None if user aborts, True otherwise
 def RenameFoldersNonAlphanumeric(rootDir):
-	if not rootDir.endswith('/'): rootDir = rootDir + '/'
+	if not rootDir.endswith(os.sep): 
+		rootDir = rootDir + os.sep
+		
 	print ('Searching %s for non-alphanumeric folders...' % rootDir)
 
 	artistDirectories = os.listdir(rootDir)
@@ -181,6 +202,9 @@ def RenameFoldersNonAlphanumeric(rootDir):
 
 	for artist in artistDirectories:
 		if not os.path.isdir(rootDir + artist): continue
+		if artist == ".AppleDouble":
+			# Ignore AppleDouble directories
+			continue
 		
 		"""
 		Detect alphanumeric conditions - ignore the following:
@@ -353,8 +377,11 @@ while True:
 		artistDirectories.sort()
 		albumDirectories = []
 		for a in artistDirectories:
-			for sub in os.listdir(startingDir + a):
-				albumDirectories.append(a + os.sep + sub + os.sep)
+			if not os.path.isdir(os.path.join(startingDir, a)):
+				continue
+			
+			for sub in os.listdir(os.path.join(startingDir, a)):
+				albumDirectories.append(os.path.join(a, sub))
 		albumDirectories.sort()
 		CombineSimilarlyNamedFolders(startingDir, albumDirectories)
 
