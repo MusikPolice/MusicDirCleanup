@@ -8,6 +8,7 @@ from difflib import SequenceMatcher
 from distutils import dir_util
 from fuzzywuzzy import fuzz
 import readline
+import sys
 	
 def invalid_input():
 	print "Please enter a valid option."
@@ -74,6 +75,8 @@ def should_exclude_album(name):
 	test_name = name.lower()
 	exclude_cases = (
 					'greatest hit',
+					'best of',
+					'the singles',
 					)
 	
 	for test in exclude_cases:
@@ -94,6 +97,7 @@ def CombineSimilarlyNamedFolders(rootDir, dirsToCompare):
 
 	# dictionary of directories to be combined
 	matches = defaultdict(list)
+	exclude_dirs = []
 
 	# double loop, bitch
 	for i in range(len(dirsToCompare)):
@@ -115,9 +119,12 @@ def CombineSimilarlyNamedFolders(rootDir, dirsToCompare):
 			tokens2 = os.path.dirname(dirsToCompare[j]).split(os.sep)
 			folder1 = tokens1[len(tokens1) - 1]
 			folder2 = tokens2[len(tokens2) - 1]
+			
+			if folder1 in exclude_dirs:
+				continue
 
 			# if directory names are similar, mark for combination
-			if (like(folder1, folder2)):
+			if (like(folder1, folder2) and not folder2 in exclude_dirs):
 				matches[dirsToCompare[i]].append(dirsToCompare[j])
 
 		# do the combination in a (sort of) user-friendly manner
@@ -132,7 +139,11 @@ def CombineSimilarlyNamedFolders(rootDir, dirsToCompare):
 				combineDirs = []
 
 				# ask the user what we should actually combine
-				indexstr = raw_input('Enter the indices of the directories to combine. Return to combine all of the above, ''s'' to skip, or ''a'' to abort: ')
+				indexstr = raw_input('Enter the indices of the directories to combine. '
+									"Return to combine all of the above, 's' to skip, " 
+									"'i' to ignore "
+									"or 'a' to abort: ")
+				indexstr = indexstr.lower()
 				if indexstr == '':
 					# all
 					combineDirs.append(rootDir + d)
@@ -144,7 +155,11 @@ def CombineSimilarlyNamedFolders(rootDir, dirsToCompare):
 				elif indexstr == 's':
 					print ('User chose to skip')
 					continue
-				elif not indexstr.isdigit():
+				elif indexstr == 'i':
+					exclude_dirs.append(folder1)
+					print ('Excluded directory {0} from future matches'.format(folder1))
+					continue
+				elif not indexstr.isdigit() and ',' not in indexstr:
 					# will throw an exception
 					print ('Unrecognized input; skipping')
 					continue
@@ -349,7 +364,13 @@ def DeleteEmptyDirectories():
 
 # Program Entry
 print ('Welcome to MusikPolice\'s Music Directory Cleanup Utility.')
-startingDir = raw_input('Enter directory to clean: ')
+
+if sys.argv[1]:
+	startingDir = sys.argv[1]
+	print "Using directory {0} from command line".format(startingDir)
+else:
+	startingDir = raw_input('Enter directory to clean: ')
+	
 if not startingDir.endswith(os.sep): 
 	startingDir = startingDir + os.sep
 
