@@ -174,15 +174,13 @@ def CombineSimilarlyNamedFolders(rootDir, dirsToCompare):
 # Returns None if user aborts, True otherwise
 def RenameFoldersNonAlphanumeric(rootDir):
 	if not rootDir.endswith('/'): rootDir = rootDir + '/'
-	print ('Searching ' + rootDir + ' for non-alphanumeric folders...')
+	print ('Searching %s for non-alphanumeric folders...' % rootDir)
 
 	artistDirectories = os.listdir(rootDir)
 	artistDirectories.sort()
 
 	for artist in artistDirectories:
 		if not os.path.isdir(rootDir + artist): continue
-		
-		# if artist contains non-alphanumeric characters, optionally rename the folder
 		
 		"""
 		Detect alphanumeric conditions - ignore the following:
@@ -330,11 +328,11 @@ if not startingDir.endswith(os.sep):
 while True:
 	print('')
 	print ('Select an action to perform:')
-	print ('1. Combine Artist Folders (level 1)')
-	print ('2. Combine Album Folders (level 2)')
-	print ('3. Rename Folders That Contain Non-Alphanumeric Characters')
-	print ('4. Delete Unwanted File Types')
-	print ('5. Delete Empty Directories')
+	print ('1. Combine artist directories (level 1)')
+	print ('2. Combine album directories (level 2)')
+	print ('3. Rename directories that contain non-standard characters')
+	print ('4. Delete unwanted file types')
+	print ('5. Delete empty directories')
 	print ('6. Quit')
 	action = raw_input('>')
 
