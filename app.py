@@ -144,6 +144,10 @@ def CombineSimilarlyNamedFolders(rootDir, dirsToCompare):
 				elif indexstr == 's':
 					print ('User chose to skip')
 					continue
+				elif not indexstr.isdigit():
+					# will throw an exception
+					print ('Unrecognized input; skipping')
+					continue
 				else:
 					# some
 					indices = indexstr.split(',')
