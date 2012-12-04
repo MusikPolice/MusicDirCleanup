@@ -7,18 +7,35 @@ from collections import defaultdict
 from difflib import SequenceMatcher
 from distutils import dir_util
 from fuzzywuzzy import fuzz
-
-
-# Interprets user response to a boolean query. Returns boolean flag for y/n/Y/N/yes/no/YES/NO
-# Returns False for any unknown input
-# Returns null if user input is a/A/abort/ABORT
-def InterpretYesNoAbort(ans):
-	if ans.upper() in ('A', 'ABORT'):
-		return None
-	elif ans.upper() in ('Y', 'YES'):
-		return True
-	else:
-		return False
+	
+def invalid_input():
+	print "Please enter a valid option."
+	
+def ask_user(prompt_message):
+	valid_answer = False
+		
+	while not valid_answer: 
+		result = raw_input(prompt_message + " ([Y]es/[N]o/[A]bort) > ")
+		result = result.upper()
+		
+		# Did we get a valid result?
+		if len(result) < 1:
+			invalid_input()
+			continue
+		
+		# Interprets user response to a boolean query. Returns boolean flag for y/n/Y/N/yes/no/YES/NO
+		# Returns False for any unknown input
+		# Returns null if user input is a/A/abort/ABORT		
+		
+		if result[0] == 'Y':
+			return True
+		elif result[0] == 'A':
+			return None
+		elif result[0] == 'N':
+			return False
+		
+		invalid_input()
+		continue
 
 # Recursively copies all files/folders from dirToCopy into dirToKeep
 # and then removes dirToCopy from the file system.
@@ -36,9 +53,9 @@ def CombineDirectoryContents (dirToKeep, dirToCopy):
 	# clean up
 	for root, dirs, files in os.walk(dirToCopy, topdown=False):
 		for name in files:
-			os.remove(root + '/' + name)
+			os.remove(root + os.sep + name)
 		for name in dirs:
-			os.rmdir(root + '/' + name)
+			os.rmdir(root + os.sep + name)
 	os.rmdir(dirToCopy)
 	print("Deleted directory %s " % dirToCopy)
 	return True
@@ -178,7 +195,7 @@ def RenameFoldersNonAlphanumeric(rootDir):
 		artist_test = re.sub(r'\s|\'|-|,', '', artist)
 		
 		if len(artist_test) > 1 and (not artist_test.isalnum()) and os.path.isdir(rootDir + artist):
-			result = InterpretYesNoAbort(raw_input("Would you like to rename <%s>? (yes/no/abort) >" % artist))
+			result = ask_user("Would you like to rename <%s>?" % artist)
 			if result is None:
 				return None
 			elif result:
@@ -188,7 +205,7 @@ def RenameFoldersNonAlphanumeric(rootDir):
 				if re.match('^.*\(\d{4}\)$', artist):
 					newName = artist[0:(string.find(artist,'(') - 1)]
 
-					result = InterpretYesNoAbort(raw_input("Rename <%s> to <%s>? (yes/no/abort) >" % (artist, newName)))
+					result = ask_user("Rename <%s> to <%s>?" % (artist, newName))
 					if result is None:
 						return None
 					elif result:
@@ -217,7 +234,7 @@ def RenameFoldersNonAlphanumeric(rootDir):
 						badlyNamedFolder = rootDir + artist + os.sep
 
 						if existingFolder != badlyNamedFolder and os.path.isdir(existingFolder) and os.path.isdir(badlyNamedFolder):
-							result = InterpretYesNoAbort(raw_input("Specified directory exists. Combine contents? (yes/no/abort) >"))
+							result = ask_user("Specified directory exists. Combine contents?")
 							if result is None:
 								return None
 							elif result:
@@ -275,7 +292,7 @@ def DeleteUnwantedFileTypes():
 				# prompt user about this file type
 				print('Found new extension *%s' % extension)
 
-				result = InterpretYesNoAbort(raw_input('Delete it? (yes/no/abort) >'))
+				result = ask_user('Delete it?')
 				if result is None:
 					return
 				elif result:
