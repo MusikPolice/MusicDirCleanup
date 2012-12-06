@@ -28,3 +28,6 @@ pip-log.txt
 
 #Temporary gedit files
 *.*~
+
+#Sublime Text 2 files
+*.sublime*
